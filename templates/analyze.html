@@ -1,0 +1,655 @@
+
+{% extends 'base.html' %}
+
+
+{% block title %}
+    <title>Datasets</title>
+
+{% endblock %}
+
+{% block body %}
+
+{% set invisible_step1 = "invisible" %}
+{% set invisible_step2 = "invisible" %}
+{% set invisible_step3 = "invisible" %}
+{% set plotwordfrequency  = "invisible" %}
+{% set plotwordembeding = "invisible" %}
+
+{% set plotwordcloud = "invisible" %}
+
+
+
+{% if  filename %}
+{% set invisible_step1 = "visible" %}
+{% set bgcolor1 = "bg-success" %}
+{% endif %}
+
+{% if plot_wordfrequency %}
+ {% set plotwordfrequency = "visible" %}
+{% endif %}
+
+{% if plot_wordcloud %}
+ {% set plotwordcloud = "visible" %}
+{% endif %}
+{% if  invisibiltystep2 %}
+{% set invisible_step2 = "visible" %}
+{% set invisible_step1 = "visible" %}
+{% set bgcolor1 = "bg-success" %}
+{% set bgcolor2 = "bg-success" %}
+
+
+{% endif %}
+<!-- {{filename}} -->
+<!--  -->
+
+{% if  invisibiltystep3 %}
+{% set invisible_step3 = "visible" %}
+
+{% set invisible_step2 = "visible" %}
+{% set invisible_step1 = "visible" %}
+{% set bgcolor1 = "bg-success" %}
+
+{% set bgcolor2 = "bg-success" %}
+
+{% set bgcolor3 = "bg-success" %}
+
+{% endif %}
+
+<br>
+<form
+class="bg-light w-100 m-0"
+action=""
+method="POST"
+id="usrform"
+enctype="multipart/form-data"
+align="center"
+style="text-align: -moz-center"
+ > 
+
+<div class="h-100 row">
+    <div class="col-2">
+        <div class="shadow h-100 card">
+            <div class="card-header">
+                choose dataset
+              </div>
+            <div class="card-body">
+
+                <div>
+                    <button type="button" class="btn btn-success"  disabled data-bs-toggle="modal" data-bs-target="#myModal">
+Add dataset                     </button>
+                    <!-- <input type="submit" class="btn btn-success {{invisible_step1}}" value="Add dataset" name="example_button" id="adddata" data-toggle="modal"/> -->
+                </div>
+                <div class="col-2">        
+                  <button type="button" class="btn btn-white text-dark m-1 p-0 bg-white text-wrap"   style="width: 8rem;">
+                    {{file}}     </button>      
+                    
+              </div>            </div></div>
+            <!-- The Modal -->
+<div class="modal" id="myModal">
+    <div class="modal-dialog">
+      <div class="modal-content text-center">
+  
+        <!-- Modal Header -->
+        <div class="modal-header text-center">
+          <h3 class="modal-title text-center">choose dataset</h3>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+  
+        <!-- Modal body -->
+        <div class="modal-body">
+            <form action="/pipeline" method="POST" enctype="multipart/form-data">
+              <div class="form-group row m-2 justify-content-center">
+
+                <label class="col-4"
+                  name="extypelabel" id="extypelabel"> Type: </label>
+                <div class="col-6">
+                  <select
+                    class="form-select w-100 m-0 p-0 border border-dark"
+                    name="extype"
+                    id="extype"
+                  >
+                    <option value="0" selected></option>
+                    <option value="ifth">IF-THEN extractor</option>
+                    <option value="cast">Causal statement extractor</option>
+                  </select>
+                </div>
+          </div>
+                <div class="form-group row m-2 justify-content-center">
+
+                      <label class="col-4"
+                        name="datasourcelabel" id="datasourcelabel"> Data source: </label>
+                      <div class="col-6">
+                        <select
+                          class="form-select w-100 m-0 p-0 border border-dark"
+                          name="datasource"
+                          id="datasource"
+                        >
+                          <option value="0" selected></option>
+                          <option value="1">Scrap from twitter</option>
+                          <option value="2">Upload</option>
+                        </select>
+                      </div>
+                </div>
+
+                <div class="form-group row m-2 justify-content-center">
+
+                  <label class="col-4"
+                    name="langlabel" id="langlabel"> language: </label>
+                  <div class="col-6">
+                    <select
+                      class="form-select w-100 m-0 p-0 border border-dark"
+                      name="langmenu"
+                      id="langmenu"
+                    >
+                      <option value="en">EN</option>
+                      <option value="it">IT</option>
+                      <option value="fr">FR</option>
+                      <option value="de">DE</option>
+                      <option value="es">ES</option>
+                      <option value="pl">PL</option>
+                    </select>
+                  </div>
+            </div>
+
+           
+
+                <label id="filenamelabel" name="filenamelabel" for="filename">File:</label>
+                <input type="file" id="filename" name="filename"><br />
+                <button name="uploadbutton" id="uploadbutton">Upload</button>
+                <!--  -->
+                <div class="form-group row m-2">
+                    <label
+                      style="color: black; text-align: right"
+                      class="col-sm-2 p-0 m-0 col-form-label"
+                      name="twitquerylabel"
+                      id="twitquerylabel"
+                    >
+                      Query:
+                    </label>
+                    <div class="col-sm-10">
+                      <textarea
+                        maxlength="100"
+                        class="w-100 p-0 m-0"
+                        name="twitquery"
+                        id="twitquery"
+                        rows="1"
+                      ></textarea>
+                    </div>
+                 
+                  </div>
+          
+                  <div class="form-element m-2">
+                    <label for="forminput-amount" id="nooftweet" name="nooftweet"
+                      >Tweets to retrieve</label
+                    >
+          
+                    <input
+                      name="numberofTweets"
+                      id="numberofTweets"
+                      max="10000000"
+                      type="number"
+                      value="10"
+                    />
+          
+                    <button
+                      data-toggle="tooltip"
+                      data-placement="top"
+                      title="By default, Twitter returns tweets up til 7 days ago. If you want to
+                    go back further, you need to explicitly set a date range."
+                      name="tweetnumbertip"
+                      id="tweetnumbertip"
+                    >
+                      ?
+                    </button>
+                  </div>
+          
+                  <div class="form-element m-2">
+                    <label for="forminput-daterange" name="daterange" id="daterange">Date range</label>
+          
+                    <div class="daterange-wrapper">
+                      <input
+                        name="startdate"
+                        id="startdate"
+                        class="input-time"
+                        type="date"
+                        placeholder="yy-mm-dd"
+                      />
+                      <label name="to" id="to"> to </label>
+                      <input
+                        name="enddate"
+                        id="enddate"
+                        class="input-time"
+                        type="date"
+                        placeholder="yyyy-mm-dd"
+                      />
+                      <span class="red"></span>
+                    </div>
+                  </div>
+                  <button name="scrapebutton" id="scrapebutton">SCRAPE</button>
+
+
+          
+                <!--  -->
+            </form>        
+        </div>
+  
+        <!-- Modal footer -->
+        <div class="modal-footer">
+          <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
+        </div>
+  
+      </div>
+    </div>
+  </div>
+
+
+  
+        </div>
+            <div class="col-1">
+                <div style="margin-top: 50%; margin-left: -28px; margin-right: -28px;">
+                    <div class="progress {{ bgcolor1}}">
+                        <div class="progress-bar bg-success" >
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-2">
+                <div class="shadow h-100 card">
+                    <div class="card-header text-center">
+                        Step 1
+                      </div>
+                    <div class="card-body text-center">
+                        <input type="submit" class="btn btn-success {{ invisible_step1 }} " value="Extract Argument" name="example_button" id="save" />
+                      
+                    </div>
+                </div>
+            </div>
+            <div class="d-none d-xl-block col-lg-1 col-xl-1">
+                <div style="margin-top: 50%; margin-left: -28px; margin-right: -28px;">
+                    <div class="progress {{ bgcolor2}}">
+                        <div class="progress-bar" style="background: linear-gradient(to right, rgb(220, 55, 69), rgb(217, 113, 122)); width: 0%;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-2">
+                <div class="shadow h-100 card ">
+                    <div class="card-header text-center">
+                        Step 2
+                      </div>
+                    <div class="card-body text-center">
+                        <input type="submit" class="btn btn-success m-1 {{invisible_step2}}" value="Wordcloud" name="example_button" id="stmtgraph" /><br />
+                        <input type="submit" class="btn btn-danger m-1 disabled {{invisible_step2}}" value="Graph" name="example_button" id="stmtgraph" /><br />
+                        <input type="submit" class="btn btn-success m-1 {{invisible_step2}}" value="Word Frequency" name="example_button" id="wordfrq" /><br />
+                        <input type="submit" class="btn btn-danger m-1 disabled {{invisible_step2}}" value="Word embedding" name="example_button" id="wordembed" />
+
+                    </div>
+                </div>
+            </div>
+            <div class="d-none d-xl-block col-lg-1 col-1">
+                <div style="margin-top: 50%; margin-left: -28px; margin-right: -28px;">
+                    <div class="progress {{ bgcolor3}}">
+                        <div class="progress-bar" style="background: linear-gradient(to right, rgb(220, 55, 69), rgb(217, 113, 122)); width: 0%;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="shadow h-100 card">
+                    <div class="card-header text-center">
+                            Step 3
+                          </div>
+                          <div class="card-body text-center">
+                            <input type="submit" class="btn btn-success m-1 {{plotwordfrequency}}" value="Plot Word frequency" name="example_button" id="wordfrq" /><br />
+                            <input type="submit" class="btn btn-success m-1 {{plotwordcloud}}" value="Plot Wordcloud" name="example_button" id="save" /><br />
+                            <input type="submit" class="btn btn-success m-1 {{plotwordembeding}}" value="Plot Word embedding" name="example_button" id="save" />
+
+                    </div>
+                </div>
+            </div>
+
+         </div>
+    </form>
+        <h1 class="mt-4 mb-4">Dashboard</h1>
+   <!-- worddcloud -->
+        <div>
+          {% if wordcloudimg %}
+          <div>
+              <div class="row">
+
+
+                <div class="justify-content-between shadow mb-4 card">
+                  <div class="card-body">
+                    <div class="text-center card-title">
+                      <h3>Word cloud  </h3>
+                    </div>
+                    <div class="col">
+                      <div class="row">
+                        <div class="container" align="center">
+                          <div class="row col-2 float-end m-2 p-2">
+                            <a href="{{ url_for('downloadimage', imagename= wordcloudimg)}}" > <i class="fa fa-download"></i> Download </a>
+                          </div>
+                          <br />
+
+                            <div class="row mt-2 p-1 col-6">
+
+                              <img src="{{ url_for('static', filename= wordcloudimg) }}" >
+
+                            </div>
+                          </div>
+
+                      </div>
+
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+          </div>
+         {% endif %}
+          </div>
+           <!--  end wordcloud -->
+
+        <div> 
+          {% if graphJSON %}
+          <div>
+              <div class="row">
+         
+         
+                <div class="justify-content-between shadow mb-4 card">
+                  <div class="card-body">
+                    <div class="text-center card-title">
+                      <h3>Word Frequency </h3>
+                    </div>
+                    <div class="col">
+                      <div class="row">
+                       <div id='chart' class='chart'></div>
+         
+                      </div>
+                      
+                    </div>
+                  </div>
+                </div>
+              </div>
+         
+          </div>
+         {% endif %}
+          </div>
+
+
+              {%  if flines %}
+                <div class="row">
+                  <div class="justify-content-between shadow mb-4 card">
+                    <div class="card-body">
+                      <div class="text-center card-title">
+                        <h3>Lists of extracted full sentences</h3>
+                      </div>
+                      <div class="col">
+                        <div class="row">
+
+                          <div class="col text-end m-1">
+                            <button
+                              type="button"
+                              class="btn btn-success text-center" onclick="exportTableToCSV('extracted_file.csv')"
+                            >
+                              Export CSV
+                            </button>
+                          </div>
+                        </div>
+                        <div class="row">
+                          <div class="react-bootstrap-table table-responsive">
+
+                              <table class="text-center table table-responsive table-bordered border-dark">
+                              <thead>
+                                <tr>
+                                  <th scope="col">IF part</th>
+                                  <th scope="col">Then part</th>
+                                    <th scope="col">Full sentence</th>
+
+                                </tr>
+                              </thead>
+                              <tbody>
+
+                           {% for data in fullfile %}
+                           <tr> {% for cell in data %}
+                                  <td> {{cell}}</td>
+                               {% endfor %}
+                              </tr>
+                          {% endfor %}
+                              </tbody>
+                            </table>
+
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {% endif %}
+
+           
+                <div class="row">
+
+                </div>
+                <div class="row">
+
+                </div>
+                <div class="row">
+
+                </div>
+            </div>
+            <div class="row">
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src='https://cdn.plot.ly/plotly-latest.min.js'></script>
+<script type='text/javascript'>
+  var graphs = {{graphJSON | safe}};
+  Plotly.plot('chart',graphs,{});
+</script>
+
+
+<script>  
+    $(document).ready(function(){  
+         $('#uploadbutton').click(function(e){  
+            e.preventDefault();
+              var filename = $('#filename').val();  
+              if(filename != '')  
+              {  
+                   $.ajax({  
+                        url:"/example",  
+                        method:"POST",  
+                        data: {filename:filename},  
+                        success:function(data)  
+                        {  
+                             alert(data);  
+                             if(data == 'No-data')  
+                             {  
+                                  alert("Please select a file to upload!");  
+                             }  
+                             else
+                             {  
+                                  $('#mymodal').hide();  
+                                  location.reload();  
+                             }  
+                        }  
+                   });  
+              }  
+              else
+              {  
+                   alert("Field required");  
+              }  
+         });    
+    });  
+   </script>   
+
+<script>  
+    $(document).ready(function(){  
+         $('#scrapebutton').click(function(e){  
+            e.preventDefault();
+            var startdate = $('#startdate').val();  
+            var enddate = $('#enddate').val();  
+            var noquery = $('#numberofTweets').val();  
+            var query = $('#twitquery').val();  
+
+
+              if(query != '')  
+              {  
+                   $.ajax({  
+                        url:"/pipeline",  
+                        method:"POST",  
+                        data: {startdate:startdate, enddate:enddate, noquery:noquery, query:query},   
+                        success:function(data)  
+                        {  
+                             alert(data);  
+                             if(query == 'No-query')  
+                             {  
+                                  alert("Please insert your query!");  
+                             }  
+                             else
+                             {  
+                                  $('#mymodal').hide();  
+                                  location.reload();  
+                             }  
+                        }  
+                   });  
+              }  
+              else
+              {  
+                   alert("Field required");  
+              }  
+         });    
+    });  
+   </script>   
+
+   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+
+   <script>
+    $(function () {
+      $("#filenamelabel").hide();
+      $("#filename").hide();
+      $("#uploadbutton").hide();
+      $("#twitquerylabel").hide();
+      $("#twitquery").hide();
+      $("#nooftweet").hide();
+      $("#numberofTweets").hide();
+      $("#tweetnumbertip").hide();
+      $("#daterange").hide();
+      $("#startdate").hide();
+      $("#enddate").hide();
+      $("#scrapebutton").hide();
+      $("#to").hide();
+      $("#langmenu").show();
+      $("#langlabel").show();
+  
+    });
+  </script>
+
+<script type="text/javascript">
+    $(function () {
+      $("#datasource").change(function () {
+        //
+        if ($(this).val() == "0") {
+            $("#filenamelabel").hide();
+            $("#filename").hide();
+            $("#uploadbutton").hide();
+            $("#twitquerylabel").hide();
+            $("#twitquery").hide();
+            $("#nooftweet").hide();
+            $("#numberofTweets").hide();
+            $("#tweetnumbertip").hide();
+            $("#daterange").hide();
+            $("#startdate").hide();
+            $("#enddate").hide();
+            $("#scrapebutton").hide();
+            $("#to").hide();
+            $("#langmenu").show();
+            $("#langlabel").show();
+      $("#langlabel").hide();
+        } else if ($(this).val() == "1") {
+            $("#filenamelabel").hide();
+            $("#filename").hide();
+            $("#uploadbutton").hide();
+            $("#twitquerylabel").show();
+            $("#twitquery").show();
+            $("#nooftweet").show();
+            $("#numberofTweets").show();
+            $("#tweetnumbertip").show();
+            $("#daterange").show();
+            $("#startdate").show();
+            $("#enddate").show();
+            $("#scrapebutton").show();
+            $("#to").show();
+            $("#langmenu").show();
+            $("#langlabel").show();
+
+        } else if ($(this).val() == "2") {
+            $("#filenamelabel").show();
+            $("#filename").show();
+            $("#uploadbutton").show();
+            $("#twitquerylabel").hide();
+            $("#twitquery").hide();
+            $("#nooftweet").hide();
+            $("#numberofTweets").hide();
+            $("#tweetnumbertip").hide();
+            $("#daterange").hide();
+            $("#startdate").hide();
+            $("#enddate").hide();
+            $("#scrapebutton").hide();
+            $("#to").hide();
+            $("#langmenu").show();
+            $("#langlabel").show();
+      
+        }
+      });
+    });
+  </script>
+<script type="text/javascript">
+function downloadCSV(csv, filename) {
+    var csvFile;
+    var downloadLink;
+
+    // CSV file
+    csvFile = new Blob([csv], {type: "text/csv"});
+
+    // Download link
+    downloadLink = document.createElement("a");
+
+    // File name
+    downloadLink.download = filename;
+
+    // Create a link to the file
+    downloadLink.href = window.URL.createObjectURL(csvFile);
+
+    // Hide download link
+    downloadLink.style.display = "none";
+
+    // Add the link to DOM
+    document.body.appendChild(downloadLink);
+
+    // Click download link
+    downloadLink.click();
+}
+
+function exportTableToCSV(filename) {
+    var csv = [];
+    var rows = document.querySelectorAll("table tr");
+
+    for (var i = 0; i < rows.length; i++) {
+        var row = [], cols = rows[i].querySelectorAll("td, th");
+
+        for (var j = 0; j < cols.length; j++)
+            row.push(cols[j].innerText);
+
+        csv.push(row.join(","));
+    }
+
+    // Download CSV file
+    downloadCSV(csv.join("\n"), filename);
+}
+</script>
+
+{% endblock %}

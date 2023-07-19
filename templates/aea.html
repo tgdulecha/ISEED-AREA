@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    <title>View data page</title>
+{% endblock %}
+
+{% block body %}
+aea page
+<div class="box-header text-left mt-3 mb-5">
+    <button class="btn bg-light pull-left" id="go-back"><i class="fa fa-arrow-circle-left"></i> Go back</button>
+  </div>
+
+    <div class="form" >
+        <form action="/" method="POST">
+
+        </form>
+    </div>
+</div>
+<script>
+    document.getElementById('go-back').addEventListener('click', () => {
+      history.back();
+    });
+  </script>
+{% endblock %}

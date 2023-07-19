@@ -1,0 +1,82 @@
+{% extends 'base.html' %} {% block title %}
+<title>ISEED_AREA</title>
+{% endblock %} {% block body %}
+
+<div class="container">
+  <h2 class="text-center ">About</h2> <br />
+  <div class="row m-2">
+    <div class="col m-2">
+      <div class="card text-dark card-body">
+        <div class="card-title"><h3>ISEED</h3></div>
+        <p class="card-text" style="text-align:justify">
+          In our present information society, online (social) media are
+          important sites of debate and discussion on a range of current affairs
+          such as climate change. As such, these (social) media platforms house
+          a trove of relevant information for the study of cultural and societal
+          conflicts. Harvesting and analyzing this digital information, however,
+          can be challenging.
+        </p>
+
+
+        <a href="https://iseedeurope.eu/about/" class=" btn btn-success bg-success  border border-white">Read more about ISEED</a>
+
+      </div>
+    </div>
+  
+
+    <div class="col m-2">
+      <div class="card">
+        <div class="card-body">
+          <div class="card-title"><h3>ISEED-AREA</h3></div>
+          <p class="card-text" style="text-align:justify">
+            ISEED-AREA (ARgument Extractor and Analyzer) is a research tool that can extract and analyze arguments from online debates. 
+            It contains a set of functions for extracting causal statements and other forms of argumentation from (noisy) textual data, like short posts from social media. 
+            It includes two types of argument extractions:
+            <ul>
+              <li>Relation extractor: extracts cause-effect relations from a sentence using a set of regular expressions; 
+                no NLP tool is employed, so the function is unaware of Part-Of-Speech or Dependency-Relations among words. 
+                This function was designed to be used with short texts from social media.</li>
+              <li>If-then extractor: extracts if-then relations from a sentence using a set of regular expressions; 
+                no NLP tool is employed, so the function is unaware of Part-Of-Speech or Dependency-Relations among words. 
+                This function was designed to be used with short texts from social media. 
+                It supports six languages, namely: English, Italian, Spanish, French, German, and Polish, with English default.  </li>
+            </ul>  
+
+
+ISEED-AREA also includes the possibility to scrap data directly from social platforms according to a given set of parameters, process, and download it. 
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <br/>
+  <div class="row border border-secondary m-2">
+    <div class="col-3 m-2">
+      <div class="card text-dark">
+        <div class="card-body">
+          <div class="card-title"><h3>The Pipeline</h3></div>
+          <p class="card-text" style="text-align:justify">
+            An ISEED-AREA pipeline consists of three steps. 
+            The first step extracts an argument from a given dataset.  
+            The second phase process, analyze,  the extracted arguments and prepare for visualization. 
+            The third phase visualize the processed data using different plots. 
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col m-2">
+        <br />
+    
+      <img src="{{url_for('static', filename='pipeline.png')}}" class="img-fluid"/>
+
+    
+      </div>
+   
+    </div>
+
+  
+    </div>
+  </div>
+
+{% endblock %}

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/2.3.1/css/flag-icon.min.css" rel="stylesheet"/>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+    />
+
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC"
+      crossorigin="anonymous"
+    />
+
+
+    <title>ISEED_AREA</title>
+               <link rel = "icon" href ="https://iseedeurope.eu/wp-content/uploads/2021/04/logo_big.png" type = "image/x-icon">
+
+
+</head>
+<body>
+  <h1 align="center" class="bg-success">
+    <span style="color: white">
+        ISEED-AREA</span
+    >
+  </h1>
+
+
+  <br />
+
+  {% include 'Navbar.html' %}
+
+
+
+  <div class="container justify-content-between mt-0">
+  </div>
+<div class="container border border-white">
+  <h2 class="text-center ">About</h2> <br />
+  <div class="row m-2">
+    <div class="col m-2">
+      <div class="card text-dark card-body border-white">
+        <div class="card-title"><h3>ISEED</h3></div>
+        <p class="card-text" style="text-align:justify">
+          In our present information society, online (social) media are
+          important sites of debate and discussion on a range of current affairs
+          such as climate change. As such, these (social) media platforms house
+          a trove of relevant information for the study of cultural and societal
+          conflicts. Harvesting and analyzing this digital information, however,
+          can be challenging.
+        </p>
+
+
+        <a href="https://iseedeurope.eu/about/" class=" btn btn-success bg-success  border border-white">Read more about ISEED</a>
+
+      </div>
+    </div>
+  
+
+    <div class="col m-2">
+      <div class="card border-white">
+        <div class="card-body">
+          <div class="card-title"><h3>ISEED-AREA</h3></div>
+          <p class="card-text" style="text-align:justify">
+            ISEED-AREA (ARgument Extractor and Analyzer) is a research tool that can extract and analyze arguments from online debates. 
+            It contains a set of functions for extracting causal statements and other forms of argumentation from (noisy) textual data, like short posts from social media. 
+            It includes two types of argument extractions: </p>
+            <ul style="text-align:justify">
+              <li>Relation extractor: extracts cause-effect relations from a sentence using a set of regular expressions; 
+                no NLP tool is employed, so the function is unaware of Part-Of-Speech or Dependency-Relations among words. 
+                This function was designed to be used with short texts from social media.</li>
+              <li>If-then extractor: extracts if-then relations from a sentence using a set of regular expressions; 
+                no NLP tool is employed, so the function is unaware of Part-Of-Speech or Dependency-Relations among words. 
+                This function was designed to be used with short texts from social media. 
+                It supports six languages, namely: English, Italian, Spanish, French, German, and Polish, with English default.  </li>
+            </ul>  
+
+
+<p style="text-align:justify"> ISEED-AREA also includes the possibility to scrap data directly from social platforms according to a given set of parameters, process, and download it. 
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <br/>
+  
+  <div class="row border-white m-2">
+    <div class="col m-1">
+      <div class="card text-dark border-white">
+        <div class="card-body">
+          <div class="card-title"><h3>The Pipeline</h3></div>
+          <p class="card-text" style="text-align:justify">
+            An ISEED-AREA pipeline consists of three steps. 
+            The first step extracts an argument from a given dataset.  
+            The second phase process, analyze,  the extracted arguments and prepare for visualization. 
+            The third phase visualize the processed data using different plots. 
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-8 m-2">
+    
+      <img src="{{url_for('static', path='/pipeline.png')}}" class="img-fluid"/>
+
+    
+      </div>
+   
+    </div>
+
+  
+    </div>
+  </div>
+
+  <script
+  src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+  integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+  crossorigin="anonymous"
+></script>
+<script
+  src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+  integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+  crossorigin="anonymous"
+></script>
+<script
+  src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+  integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+  crossorigin="anonymous"
+></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+
+<footer class="bg-white text-center d-flex justify-content-center ">
+  <div class="container">
+    <div class="row border border-secondary my-2 py-2">
+      <div class="col me-0">
+        <img src="https://iseedeurope.eu/wp-content/themes/iseed/assets/images/eu.jpg" height="80px">
+      </div>
+      <div class="col-sm-10 ms-0">
+        <p style=" text-align: justify;">  This project has received funding from the European Union’s Horizon 2020 research and innovation programme under Grant Agreement No. 960366.
+          This page reflects only the authors’ views and the European Commission/INEA is not responsible for any use that may be made of the information it contains.</p>
+      </div>
+  </div>
+  </div>
+
+</footer>
+</body>
+</html>
