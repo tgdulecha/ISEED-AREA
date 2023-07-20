@@ -165,7 +165,7 @@ def AE(filename, chlang):
         from csv import reader
 
         # open file in read mode
-        with open(filename, 'r') as read_obj:
+        with open(filename, 'r', encoding='utf-8') as read_obj:
             # pass the file object to reader() to get the reader object
             csv_reader = reader(read_obj)
             # Iterate over each row in the csv using reader object
@@ -366,9 +366,12 @@ def datasets(lang=None):
 
 @app.route("/example_dataset")
 def example_dataset():
-  with open("example.csv") as file:
+  with open("example.csv", 'r', encoding='utf-8') as file:
     reader = csv.reader(file)
     return render_template("example_dataset.html", csv=reader)
+@app.route("/userguide")
+def userguide():
+    return render_template("userguide.html")
 @app.route("/example_pipeline", methods=['POST', 'GET'])
 def example_pipeline():
     session['procfile'] = ""
@@ -657,7 +660,7 @@ def pipeline():
                     session['filepath'] = "static/" + session['filename']
                     session['graphJSON'] = session['graphJSON'] if session.get('graphJSON') else ""
                     session['filename'] = session['filename'] if session.get('filename') else ""
-                    return render_template('pipeline.html', invisibiltystep3='visible', flines=session['fln'],
+                    return render_template('pipeline.html', invisibiltystep3='visible', flines=session['fline'],
                                            plot_wordcloud='visible', argument=session['processedfile'],
                                            datafr=session['df_format'], wordcloudimg=session['filename'],
                                            graphJSON=session['graphJSON'], fpath=session['filepath'],
