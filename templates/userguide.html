@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+
+
+{% block title %}
+<title>User guide </title>
+
+{% endblock %}
+{% block body %}
+<div class="row">
+  <div class="justify-content-between shadow mb-4 card">
+    <div class="card-body">
+      <div class="text-center card-title m-5 col-10">
+ <p>
+        The input data, CSV file, to the pipeline or API must contain two-column data. The first column is an author-id, which can be anonymous or null.
+   The second column is a text, content to be processed. For an example dataset, please look <a href="/home/example_dataset"> here </a> </p></div>
+      <div class="col">
+        <div class="row">
+
+
+        </div>
+        <div class="row">
+      <p> To use the pipeline, follow the following steps:</p>
+                        <div class="m-3">
+
+                    <p> Click on the pipeline from the menu bar. </p>
+                              <img src="static/userguide/0.png" class="img-fluid" >
+
+            </div>
+                        <div class="m-3">
+
+          <p> Select the dataset and upload it: </p>
+            <p> Click Add Dataset. </p>
+                                          <img src="static/userguide/1.png" class="img-fluid" >
+                        </div>
+
+            <div class="m-3">
+
+            <p> Select the type of argument extractor, IF-THEN Extractor, and data source upload. </p>
+                                          <img src="static/userguide/2.png" class="img-fluid" >
+                        </div>
+
+            <div class="m-3">
+
+            <p> Select the language of the file. </p>
+                              <img src="static/userguide/3.png" class="img-fluid" >
+                        </div>
+            <div class="m-3">
+
+            <p> Then upload file.</p>
+                                          <img src="static/userguide/4.png" class="img-fluid" >
+
+
+            </div>
+                        <div class="m-3">
+
+
+<p> Extract an argument:</p>
+            <div class="m-3">
+            <p> Click Extract argument. </p>
+                                          <img src="static/userguide/5.png" class="img-fluid" >
+
+
+            </div>
+<div class="m-3" >
+<p> Click on the export CSV if you want to export raw extracted content.</p>
+                                          <img src="static/userguide/6.png" class="img-fluid" >
+
+            <br><br><br> </div>
+<div>
+            <p> To generate a word cloud of extracted words, click the word cloud and plot it to visualize them. </p>
+                                          <img src="static/userguide/7.png" class="img-fluid" > </div>
+            <br> <br><br>
+
+            <p> Click on download to download the word cloud image. </p>
+                                          <img src="static/userguide/8.png" class="img-fluid" >
+            <br> <br><br>
+
+<p> To generate a word frequency of extracted words, click the word frequency and plot it to visualize them.</p>
+                                          <img src="static/userguide/9.png" class="img-fluid" >
+            <br> <br><br>
+
+<p> Click on the download plot as png to download the word frequency plot.</p>
+                                          <img src="static/userguide/10.png" class="img-fluid" >
+
+
+
+                            <div class="m-3">
+                                To use an API, follow the following steps.
+                                </div>
+            <br> <br><br>
+
+                              <div class="m-3">
+                                          <img src="static/userguide/api1.png" class="img-fluid" >
+                                </div>
+            <br> <br><br>
+
+                              <div class="m-3">
+                                          <img src="static/userguide/api2.png" class="img-fluid" >
+                                </div>
+                                        <br> <br><br>
+                            <p>                                Argument extraction from csv file.
+</p>
+
+                              <div class="m-3">
+                                          <img src="static/userguide/api3.png" class="img-fluid" >
+                                </div>
+                                        <br> <br><br>
+
+                              <div class="m-3">
+                                          <img src="static/userguide/api4.png" class="img-fluid" >
+                                </div>
+
+
+
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+{% endblock %}
