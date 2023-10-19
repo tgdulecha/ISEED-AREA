@@ -1,21 +1,19 @@
 from flask import Flask, render_template, url_for, request, redirect, flash, session, send_file, json
-import snscrape.modules.telegram as telegram
-import snscrape.modules.twitter as sntwitter
+
 import os
 import json
 import plotly
 import plotly.express as px
-
+import random
 import string
 import numpy as np
 from wordcloud import WordCloud, STOPWORDS
 import pandas as pd
 import re
-
 from werkzeug.utils import secure_filename
 from gensim.parsing.preprocessing import remove_stopwords
 from nltk.tokenize import sent_tokenize, word_tokenize
-
+from joblib import parallel, delayed
 from flask_session import Session
 from fastapi import FastAPI, Request, Path, Query, UploadFile, File
 from fastapi.responses import FileResponse
@@ -27,6 +25,7 @@ import uvicorn
 import aiofiles
 import csv
 from fastapi.responses import StreamingResponse # Add to Top
+os.environ["R_HOME"] = r"C:\Program Files\R\R-4.3.1" # change as needed
 
 UPLOAD_FOLDER = os.path.join('static', 'uploads')
 TEMPAPIDATA_UPLOADFOLDER=os.path.join('static', 'APIFILES')
@@ -124,9 +123,9 @@ def relation_api(sentence,consider_passive, consider_end_form ):
     r['source']('if_then_extractor.R')
     relation_extractor = robjects.globalenv['relation_extractor']
     listres = relation_extractor(sentence, consider_passive, consider_end_form)
-  
+
     return listres
-  
+
 def if_then_from_file(filename, lang):
     fname=filename
     os.remove(filename)
@@ -151,12 +150,11 @@ emoji_pattern = re.compile("["
 def AE(filename, chlang):
 
     wholepart = []
-    import rpy2.robjects as robjects
-    r = robjects.r
-    r['source']('if_then_extractor.R')
-
-    if_then_extractor_sentence = robjects.globalenv['if_then_extractor_sentence']
-    relation_extractor = robjects.globalenv['relation_extractor']
+    # import rpy2.robjects as robjects
+    # r = robjects.r
+    # r['source']('if_then_extractor.R')
+    #
+    # if_then_extractor_sentence = robjects.globalenv['if_then_extractor_sentence']
     total = 0
     exc = 0
     error_exc = []
@@ -184,14 +182,14 @@ def AE(filename, chlang):
                     if len(re.findall(r'\w+', sentenceSi)) > 4:
 
                         try:
-                            listres = if_then_extractor_sentence(sentenceSi, chlang)
+                            ifpart, thenpart,_ = if_then_api(sentenceSi, chlang)
                         except:
                             exc += 1
                             error_exc.append([sentenceSi])
                             continue
 
-                        ifpart = str(list(listres[1])[0])
-                        thenpart = str(list(listres[2])[0])
+                        # ifpart = str(list(listres[1])[0])
+                        # thenpart = str(list(listres[2])[0])
                         # linecomplete = [line + ';' + sentenceSi + ';' + ifpart + ';' + thenpart][0]
                         if ifpart != '000000' and thenpart != "":
                             wholepart.append([ifpart, thenpart, fullsentence])
@@ -245,6 +243,7 @@ def AE(filename, chlang):
 
 def Causal_AE(filename, consider_passive, consider_end_form):
     wholepart = []
+    cause_effect_full=[]
     total = 0
     exc = 0
     error_exc = []
@@ -253,14 +252,15 @@ def Causal_AE(filename, consider_passive, consider_end_form):
         from csv import reader
 
         # open file in read mode
-        with open(filename, 'r') as read_obj:
+        with open(filename, 'r', encoding='utf-8') as read_obj:
             # pass the file object to reader() to get the reader object
             csv_reader = reader(read_obj)
+            next(csv_reader)
+
             # Iterate over each row in the csv using reader object
             for row in csv_reader:
                 # row variable is a list that represents a row in csv
                 text = row[1]
-                print(text)
                 if text!="":
                     text = emoji_pattern.sub(r'', text)
                     sentenceS = sent_tokenize(text)
@@ -302,11 +302,70 @@ def Causal_AE(filename, consider_passive, consider_end_form):
                                     [id, cause, rel_negation, rel_operator, rel_passive_form, rel_creation,
                                      rel_destruction,
                                      rel_causation, rel_coref_res, effect])
+                                cause_effect_full.append([cause, effect, fullsentence])
+
+    elif filename.endswith('.json'):
+        dk1 = "id"
+        dk2 = "author_id"
+        dk3 = 'in_reply_to_user_id'
+        dk4 = "created_at"
+        dk5 = "text"
+
+        with open(filename, encoding='utf-8') as json_file:
+
+            data = json.load(json_file)
+
+            for dato in data:
+
+                text = dato[dk5]
+                text = func(text)
+                text = emoji_pattern.sub(r'', text)
+                # line = str(dato[dk1]) + ';' + str(dato[dk2]) + ';' + str(dato[dk4]) + ';' + str(text)
+
+                sentenceS = sent_tokenize(text)
+                for i in range(len(sentenceS)):
+
+                    total += 1
+                    fullsentence = sentenceS[i]
+
+                    sentenceSi = re.sub(r'[\(\)]', '', fullsentence)
+                    sentenceSi = sentenceSi.replace(" ,", ",")
+                    if len(re.findall(r'\w+', sentenceSi)) > 4:
+
+                        try:
+                            listres = relation_api(sentenceSi, consider_passive, consider_end_form)
+                            id = str(list(listres[0])[0]) if list(listres[0])[0] is not None else '000000'
+                            cause = str(list(listres[1])[0]) if list(listres[1])[0] is not None else '000000'
+                            rel_negation = str(list(listres[2])[0]) if list(listres[2])[0] is not None else '000000'
+                            rel_operator = str(list(listres[3])[0]) if list(listres[3])[0] is not None else '000000'
+                            rel_passive_form = str(list(listres[4])[0]) if list(listres[4])[
+                                                                               0] is not None else '000000'
+                            rel_creation = str(list(listres[5])[0]) if list(listres[5])[0] is not None else '000000'
+                            rel_destruction = str(list(listres[6])[0]) if list(listres[6])[
+                                                                              0] is not None else '000000'
+                            rel_causation = str(list(listres[7])[0]) if list(listres[7])[
+                                                                            0] is not None else '000000'
+                            rel_coref_res = str(list(listres[8])[0]) if list(listres[8])[
+                                                                            0] is not None else '000000'
+                            effect = str(list(listres[9])[0]) if list(listres[9])[0] is not None else '000000'
+
+                        except:
+                            exc += 1
+                            error_exc.append([sentenceSi])
+                            continue
+
+                        # linecomplete = [line + ';' + sentenceSi + ';' + ifpart + ';' + thenpart][0]
+                        if cause != '000000' and effect != '000000':
+                            wholepart.append(
+                                [id, cause, rel_negation, rel_operator, rel_passive_form, rel_creation,
+                                 rel_destruction,
+                                 rel_causation, rel_coref_res, effect])
+                            cause_effect_full.append([cause, effect, fullsentence])
 
 
     else:
         flash('Unsupported file type. Please upload csv file')
-    return wholepart
+    return wholepart, cause_effect_full
 
 # 2.function to get string from list.
 def get_string(lst, language):
@@ -334,11 +393,11 @@ def get_string(lst, language):
         if filtered_thenstmt:
             allwords.append(filtered_thenstmt)
         words = nltk.RegexpTokenizer(r'\w+').tokenize(str(allwords))
-         
+
         for word in words:
             if len(word)<3:
                 words.remove(word)
-        
+
 
 
 
@@ -352,7 +411,7 @@ def get_string(lst, language):
         df_format=df_freq
         df_freq=df_freq.values.tolist()
        #freqdist = Freq_df(words)
-    
+
     return df_freq, words, df_format
 
 
@@ -360,7 +419,7 @@ def get_string(lst, language):
 @app.route("/datasets", methods=['POST', 'GET'])
 def datasets(lang=None):
     filenames = os.listdir('static/uploads/')
-    
+
     return render_template("datasets.html", filenames=filenames, lang=lang)
 
 
@@ -372,32 +431,15 @@ def example_dataset():
 @app.route("/userguide")
 def userguide():
     return render_template("userguide.html")
+@app.route("/demovideo")
+def demovideo():
+    return render_template("userguide.html")
 @app.route("/example_pipeline", methods=['POST', 'GET'])
 def example_pipeline():
-    session['procfile'] = ""
-    session['fln'] = ""
-    data_filename = "static/uploads/en_example.csv"
     session['lang'] = "en"
 
-    session['uploaded_data_file_path'] = data_filename
-    if_then_full = AE((session['uploaded_data_file_path']),"en")
+    session['uploaded_data_file_path'] = "static/example/en_example.csv"
 
-    if_then_array = np.array(if_then_full)
-
-    allthenpart = if_then_array[:, 1]
-    allthenpart = allthenpart.tolist()
-
-    allfsentences = if_then_array[:, 2]
-    allfsentences = allfsentences.tolist()
-
-    session['procfile'] = allthenpart
-    session['fln'] = allfsentences
-    session['fullinfo'] = if_then_full
-
-    freqdist, words, df_format = get_string(session['procfile'], session['lang'])
-    session['freqdist'] = freqdist
-    session['words'] = words
-    session['df_format'] = df_format
     session['graphJSON'] = session['graphJSON'] if session.get('graphJSON') else ""
     session['filepath'] = session['filepath'] if session.get('filepath') else ""
     session['filename'] = session['filename'] if session.get('filename') else ""
@@ -407,23 +449,44 @@ def example_pipeline():
                     session['filepath']=""
                     session['graphJSON']=""
                     session['filename']=""
+                    if_then_full = AE((session['uploaded_data_file_path']), "en")
+
+                    if_then_array = np.array(if_then_full)
+
+                    allthenpart = if_then_array[:, 1]
+                    allthenpart = allthenpart.tolist()
+
+                    allfsentences = if_then_array[:, 2]
+                    allfsentences = allfsentences.tolist()
+
+                    session['procfile'] = allthenpart
+                    session['fln'] = allfsentences
+                    session['fullinfo'] = if_then_full
+                    session['freqdist'] = ""
+                    session['words'] = ""
+                    session['df_format'] = ""
 
                     return render_template('example.html', invisibiltystep2='visible', flines=session['fln'], fullfile=session['fullinfo'])
 
                 elif request.form['example_button'] == 'Wordcloud':
+                    if ((session.get('freqdist') == "") or (session.get('words') == "")):
+                        freqdist, words, df_format = get_string(session['procfile'], session['lang'])
+                        session['freqdist'] = freqdist
+                        session['words'] = words
+                        session['df_format'] = df_format
+                    imagenumber = str(random.randint(0, 100000))
                     unique_string = str(list(session['words']))
                     wordcloud = WordCloud(collocations=True, background_color="black", min_font_size=4).generate(
                         unique_string)
-
-                    wordcloud.to_file('static/wordcloud.png')
+                    wordcloud.to_file('static/wordcloud' + imagenumber + '.png')
+                    session['filename'] = "wordcloud" + imagenumber + ".png"
 
                     return render_template('example.html', invisibiltystep3='visible', flines=session['fln'],  argument = session['procfile'], datafr=session['df_format'],
-                                           plot_wordcloud='visible', fullfile=session['fullinfo'], wordcloudimg=session['filename'] , graphJSON=session['graphJSON'],fpath=session['filepath'])
+                                           plot_wordcloud='visible', fullfile=session['fullinfo'],  graphJSON=session['graphJSON'],fpath=session['filepath'])
                 elif request.form['example_button'] == 'Graph':
                     return render_template('example.html', invisibiltystep2='visible', filepath=session['uploaded_data_file_path'], plotgraph='visible')
 
                 elif request.form['example_button'] == 'Plot Wordcloud':
-                    session['filename'] = "wordcloud.png"
                     session['filepath'] = "static/" + session['filename']
                     session['graphJSON'] = session['graphJSON'] if session.get('graphJSON') else ""
                     session['filename'] = session['filename'] if session.get('filename') else ""
@@ -432,6 +495,11 @@ def example_pipeline():
 
 
                 elif request.form['example_button'] == 'Word Frequency':
+                    if ((session.get('freqdist') == "") or (session.get('words') == "")):
+                        freqdist, words, df_format = get_string(session['procfile'], session['lang'])
+                        session['freqdist'] = freqdist
+                        session['words'] = words
+                        session['df_format'] = df_format
 
 
                     return render_template('example.html', invisibiltystep3='visible', flines=session['fln'],  argument = session['procfile'],fullfile=session['fullinfo'],
@@ -453,8 +521,95 @@ def example_pipeline():
                                            datafr=session['df_format'], wordcloudimg=session['filename'], fpath=session['filepath'],fullfile=session['fullinfo'],plot_wordfrequency='visible')
 
     else:
-        return render_template('example.html', filename=session['fln'])
+        return render_template('example.html', filename=session['uploaded_data_file_path'])
 
+
+# causal example pipeline
+@app.route("/cexample_pipeline", methods=['POST', 'GET'])
+def cexample_pipeline():
+
+    session['lang'] = "en"
+
+    session['uploaded_data_file_path'] = "static/example/testcausal.csv"
+
+    if request.method == 'POST':
+        if request.form['example_button'] == 'Extract Argument':
+            session['filepath']=""
+            session['graphJSON']=""
+            session['filename']=""
+            _, if_then_full = Causal_AE(session['uploaded_data_file_path'], True, True)
+            if_then_array = np.array(if_then_full)
+
+            cause = if_then_array[:, 0]
+            cause = cause.tolist()
+            effect = if_then_array[:, 1]
+            effect = effect.tolist()
+
+            allfsentences = if_then_array[:, 2]
+            allfsentences = allfsentences.tolist()
+
+            session['procfile'] = effect
+            session['fln'] = allfsentences
+            session['fullinfo'] = if_then_full
+            session['freqdist'] = ""
+            session['words'] = ""
+            session['df_format'] = ""
+
+            return render_template('causal_example.html', invisibiltystep2='visible', flines=session['fln'], fullfile=session['fullinfo'])
+
+        elif request.form['example_button'] == 'Wordcloud':
+            if ((session.get('freqdist') == "") or (session.get('words') == "")):
+                freqdist, words, df_format = get_string(session['procfile'], session['lang'])
+                session['freqdist'] = freqdist
+                session['words'] = words
+                session['df_format'] = df_format
+            imagenumber = str(random.randint(0, 100000))
+            unique_string = str(list(session['words']))
+            wordcloud = WordCloud(collocations=True, background_color="black", min_font_size=4).generate(
+                unique_string)
+            wordcloud.to_file('static/wordcloud' + imagenumber + '.png')
+            session['filename'] = "wordcloud" + imagenumber + ".png"
+            return render_template('causal_example.html', invisibiltystep3='visible', flines=session['fln'],  argument = session['procfile'], datafr=session['df_format'],
+                                   plot_wordcloud='visible', fullfile=session['fullinfo'],  graphJSON=session['graphJSON'],fpath=session['filepath'])
+        elif request.form['example_button'] == 'Graph':
+            return render_template('causal_example.html', invisibiltystep2='visible', filepath=session['uploaded_data_file_path'], plotgraph='visible')
+
+        elif request.form['example_button'] == 'Plot Wordcloud':
+            session['filepath'] = "static/" + session['filename']
+            session['graphJSON'] = session['graphJSON'] if session.get('graphJSON') else ""
+            session['filename'] = session['filename'] if session.get('filename') else ""
+            return render_template('causal_example.html', invisibiltystep3='visible', flines=session['fln'],plot_wordcloud='visible', argument = session['procfile'],
+                                   datafr=session['df_format'],wordcloudimg=session['filename'] , graphJSON=session['graphJSON'],fpath=session['filepath'],fullfile=session['fullinfo'])
+
+
+        elif request.form['example_button'] == 'Word Frequency':
+            if ((session.get('freqdist') == "") or (session.get('words') == "")):
+                freqdist, words, df_format = get_string(session['procfile'], session['lang'])
+                session['freqdist'] = freqdist
+                session['words'] = words
+                session['df_format'] = df_format
+
+
+            return render_template('causal_example.html', invisibiltystep3='visible', flines=session['fln'],  argument = session['procfile'],fullfile=session['fullinfo'],
+                                   plot_wordfrequency='visible', wordcloudimg=session['filename'] , graphJSON=session['graphJSON'],fpath=session['filepath'])
+        elif request.form['example_button'] == 'Plot Word frequency':
+
+            #fig = px.histogram(session[df_format], x='continent', y='col_chosen', histfunc='avg')
+            fig = px.scatter(session['df_format'].query(" Frequency > 2"), x='Term', y='Frequency',
+                             hover_data=['Term', 'Frequency'], size= 'Frequency', size_max=40,
+                             color='Frequency')
+
+            graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+            session['graphJSON']=graphJSON
+            session['filepath'] = session['filepath'] if session.get('filepath') else ""
+            session['filename'] = session['filename'] if session.get('filename') else ""
+
+
+            return render_template('causal_example.html', graphJSON=graphJSON, invisibiltystep3='visible', flines=session['fln'],   fqdist = session['freqdist'],
+                                   datafr=session['df_format'], wordcloudimg=session['filename'], fpath=session['filepath'],fullfile=session['fullinfo'],plot_wordfrequency='visible')
+
+    else:
+        return render_template('causal_example.html', filename=session['uploaded_data_file_path'])
 
 @app.route("/download/<fname>", methods=['POST', 'GET'])
 def downloadfile(fname):
@@ -508,7 +663,7 @@ def analyzefile(fname):
     session['graphJSON'] = session['graphJSON'] if session.get('graphJSON') else ""
     session['filepath'] = session['filepath'] if session.get('filepath') else ""
     session['filename'] = session['filename'] if session.get('filename') else ""
-    if request.method == 'POST':  
+    if request.method == 'POST':
 
                 if request.form['example_button'] == 'Extract Argument':
                     session['filepath']=""
@@ -517,23 +672,25 @@ def analyzefile(fname):
                     return render_template('analyze.html', invisibiltystep2='visible', flines=session['fln'],
                                            fullfile=session['fullinfo'])
                 elif request.form['example_button'] == 'Wordcloud':
+                    imagenumber = str(random.randint(0, 100000))
+
                     unique_string = str(list(session['words']))
                     wordcloud = WordCloud(collocations=True, background_color="black", min_font_size=4).generate(
                         unique_string)
 
-                    wordcloud.to_file('static/wordcloud.png')
+                    wordcloud.to_file('static/wordcloud' + imagenumber + '.png')
+                    session['filename'] = "wordcloud" + imagenumber + ".png"
 
                     return render_template('analyze.html', invisibiltystep3='visible', flines=session['fln'],
                                            argument=session['procfile'], datafr=session['df_format'],
                                            plot_wordcloud='visible', fullfile=session['fullinfo'],
-                                           wordcloudimg=session['filename'], graphJSON=session['graphJSON'],
+                                         graphJSON=session['graphJSON'],
                                            fpath=session['filepath'])
                 elif request.form['example_button'] == 'Graph':
                     return render_template('analyze.html', invisibiltystep2='visible',
                                            filepath=session['uploaded_data_file_path'], plotgraph='visible')
 
                 elif request.form['example_button'] == 'Plot Wordcloud':
-                    session['filename'] = "wordcloud.png"
                     session['filepath'] = "static/" + session['filename']
                     session['graphJSON'] = session['graphJSON'] if session.get('graphJSON') else ""
                     session['filename'] = session['filename'] if session.get('filename') else ""
@@ -575,14 +732,12 @@ def analyzefile(fname):
 
 @app.route('/pipeline', methods=['POST', 'GET'])
 def pipeline():
-    session['processedfile'] = ""
     session['flines'] = ""
 
     if request.method == 'POST':
            f = request.files.get('filename')
         # Extracting uploaded file name
            data_filename = secure_filename(f.filename)
-           input = request.form['twitquery']
            lang = request.form['langmenu']
            session['lang'] = lang
 
@@ -590,6 +745,17 @@ def pipeline():
            if data_filename != '':
                     f.save(os.path.join(app.config['UPLOAD_FOLDER'], (lang + "_" + data_filename)))
                     session['uploaded_data_file_path'] = os.path.join(app.config['UPLOAD_FOLDER'], (lang + "_" + data_filename))
+
+                    return render_template('pipeline.html', filename= session['uploaded_data_file_path'])
+           else:
+                if request.form['submit_button'] == 'Extract Argument':
+                    session['filepath']=""
+                    session['graphJSON']=""
+                    session['filename']=""
+                    head_tail = os.path.split(session['uploaded_data_file_path'])
+
+                    filename=head_tail[1]
+                    session['lang'] = filename.split('_')[0]
 
                     if_then_full = AE((session['uploaded_data_file_path']),session['lang'])
 
@@ -605,58 +771,35 @@ def pipeline():
                     session['fline'] = allfsentences
                     session['fullinfo'] = if_then_full
                     session['uploaded_file'] = data_filename
-                    freqdist, words, df_format =get_string(session['processedfile'], session['lang'] )
-                    session['freqdist'] = freqdist
-                    session['words'] = words
-                    session['df_format'] = df_format
-                    return render_template('pipeline.html', filename= session['uploaded_data_file_path'], file=session['uploaded_file'])
+                    session['freqdist'] = ""
+                    session['words'] = ""
+                    session['df_format'] = ""
 
-
-           elif input!= '':
-                noquery = request.form['numberofTweets']
-                startdate=request.form['startdate']
-                enddate=request.form['enddate']
-                if startdate!='' and enddate!='':
-                    query = input + " lang:" + lang + " until:" + enddate + " since:" + startdate
-                else:
-                    query = input + " lang:" + lang
-                fecthtwitterdata(query, noquery, input, lang)
-
-                session['uploaded_data_file_path'] =  os.path.join(app.config['UPLOAD_FOLDER'], lang + "_" + input +  '.csv')
-
-                processedfile, falllines = AE((session['uploaded_data_file_path']),session['lang'])
-                session['processedfile'] = processedfile
-                session['fline'] = falllines
-                session['uploaded_file']= lang + "_" + input +  '.csv'
-
-
-                return render_template('pipeline.html', filename=session['uploaded_data_file_path'], file='')
-
-
-           else:
-                if request.form['submit_button'] == 'Extract Argument':
-                    session['filepath']=""
-                    session['graphJSON']=""
-                    session['filename']=""
                     return render_template('pipeline.html', invisibiltystep2='visible', flines=session['fline'],
                                            fullfile=session['fullinfo'])
 
                 elif request.form['submit_button'] == 'Wordcloud':
+                    if ((session.get('freqdist') == "") or (session.get('words') == "")):
+                        freqdist, words, df_format = get_string(session['processedfile'], session['lang'])
+                        session['freqdist'] = freqdist
+                        session['words'] = words
+                        session['df_format'] = df_format
                     unique_string = str(list(session['words']))
                     wordcloud = WordCloud(collocations=True, background_color="black", min_font_size=4).generate(
                         unique_string)
+                    imagenumber = str(random.randint(0, 100000))
 
-                    wordcloud.to_file('static/wordcloud.png')
+                    wordcloud.to_file('static/wordcloud' + imagenumber + '.png')
+                    session['filename'] = "wordcloud" + imagenumber + ".png"
 
                     return render_template('pipeline.html', invisibiltystep3='visible', flines=session['fline'],  argument = session['processedfile'], datafr=session['df_format'],
-                                           plot_wordcloud='visible', fullfile=session['fullinfo'], wordcloudimg=session['filename'], graphJSON=session['graphJSON'],
+                                           plot_wordcloud='visible', fullfile=session['fullinfo'], graphJSON=session['graphJSON'],
                                            fpath=session['filepath'])
 
 
                 elif request.form['submit_button'] == 'Graph':
                     return render_template('pipeline.html', invisibiltystep2='visible', filepath=session['uploaded_data_file_path'])
                 elif request.form['submit_button'] == 'Plot Wordcloud':
-                    session['filename'] = "wordcloud.png"
                     session['filepath'] = "static/" + session['filename']
                     session['graphJSON'] = session['graphJSON'] if session.get('graphJSON') else ""
                     session['filename'] = session['filename'] if session.get('filename') else ""
@@ -667,7 +810,11 @@ def pipeline():
                                            fullfile=session['fullinfo'])
 
                 elif request.form['submit_button'] == 'Word Frequency':
-
+                    if ((session.get('freqdist') == "") or (session.get('words') == "")):
+                        freqdist, words, df_format = get_string(session['processedfile'], session['lang'])
+                        session['freqdist'] = freqdist
+                        session['words'] = words
+                        session['df_format'] = df_format
                     return render_template('pipeline.html', invisibiltystep3='visible', flines=session['fline'],
                                            argument=session['processedfile'], fullfile=session['fullinfo'],
                                            plot_wordfrequency='visible', wordcloudimg=session['filename'],
@@ -692,67 +839,125 @@ def pipeline():
 
     else:
             return render_template("pipeline.html")
-@app.route('/wordcloud', methods=['POST', 'GET'])
-def notdash():
-
- 
-    df = pd.DataFrame({
-        'Fruit': ['Apples', 'Oranges', 'Bananas', 'Apples', 'Oranges',
-                  'Bananas'],
-        'Amount': [4, 1, 2, 2, 4, 5],
-        'City': ['SF', 'SF', 'SF', 'Montreal', 'Montreal', 'Montreal']
-    })
-    
-    fig = px.bar(df, x='Fruit', y='Amount', color='City',
-                 barmode='group')
-    graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
-    security_data = "Wikipedia was launched on January 15, 2001, by Jimmy Wales and Larry Sanger.[10] Sanger coined its name,[11][12] as a portmanteau of wiki[notes 3] and 'encyclopedia'. Initially an English-language encyclopedia, versions in other languages were quickly developed. With 5,748,461 articles,[notes 4] the English Wikipedia is the largest of the more than 290 Wikipedia encyclopedias. Overall, Wikipedia comprises more than 40 million articles in 301 different languages[14] and by February 2014 it had reached 18 billion page views and nearly 500 million unique visitors per month.[15] In 2005, Nature published a peer review comparing 42 science articles from Encyclopadia Britannica and Wikipedia and found that Wikipedia's level of accuracy approached that of Britannica.[16] Time magazine stated that the open-door policy of allowing anyone to edit had made Wikipedia the biggest and possibly the best encyclopedia in the world and it was testament to the vision of Jimmy Wales.[17] Wikipedia has been criticized for exhibiting systemic bias, for presenting a mixture of 'truths, half truths, and some falsehoods',[18] and for being subject to manipulation and spin in controversial topics.[19] In 2017, Facebook announced that it would help readers detect fake news by suitable links to Wikipedia articles. YouTube announced a similar plan in 2018."
 
 
-    wordcloud = WordCloud(collocations=True, background_color= "white" ).generate(security_data)
-    filename = "static/"+ "wordcloud.png"
-    wordcloud.to_file(filename)
+## causal pipeline
+
+@app.route('/causal_pipeline', methods=['POST', 'GET'])
+def causal_pipeline():
+    session['processedfile'] = ""
+    session['flines'] = ""
+    if request.method == 'POST':
+        f = request.files.get('filename')
+        # Extracting uploaded file name
+        data_filename = secure_filename(f.filename)
+        if data_filename != '':
+            f.save(os.path.join(app.config['UPLOAD_FOLDER'], data_filename))
+            session['uploaded_data_file_path'] = os.path.join(app.config['UPLOAD_FOLDER'], data_filename)
+            session['procfile'] = ""
+            session['fln'] = ""
+            session['lang'] = "en"
+
+            return render_template('causal_pipeline.html', filename=session['uploaded_data_file_path'],)
+        else:
+            if request.form['submit_button'] == 'Extract Argument':
+                session['filepath'] = ""
+                session['graphJSON'] = ""
+                session['filename'] = ""
+                _, if_then_full = Causal_AE(session['uploaded_data_file_path'], True, True)
+                if_then_array = np.array(if_then_full)
+
+                cause = if_then_array[:, 0]
+                cause = cause.tolist()
+                effect = if_then_array[:, 1]
+                effect = effect.tolist()
+
+                allfsentences = if_then_array[:, 2]
+                allfsentences = allfsentences.tolist()
+
+                session['procfile'] = effect
+                session['fln'] = allfsentences
+                session['fullinfo'] = if_then_full
+                session['freqdist'] = ""
+                session['words'] = ""
+                session['df_format'] = ""
+
+                return render_template('causal_pipeline.html', invisibiltystep2='visible', flines=session['fln'],
+                                       fullfile=session['fullinfo'])
+
+            elif request.form['submit_button'] == 'Wordcloud':
+                if ((session.get('freqdist')=="") or (session.get('words')=="")):
+                      freqdist, words, df_format = get_string(session['procfile'], session['lang'])
+                      session['freqdist'] = freqdist
+                      session['words'] = words
+                      session['df_format'] = df_format
 
 
+                session['graphJSON'] = session['graphJSON'] if session.get('graphJSON') else ""
+                session['filepath'] = session['filepath'] if session.get('filepath') else ""
+                session['filename'] = session['filename'] if session.get('filename') else ""
+                unique_string = str(list(session['words']))
+                wordcloud = WordCloud(collocations=True, background_color="black", min_font_size=4).generate(
+                    unique_string)
+                imagenumber = str(random.randint(0, 100000))
+
+                wordcloud.to_file('static/wordcloud' + imagenumber + '.png')
+                session['filename'] = "wordcloud" + imagenumber + ".png"
+
+                return render_template('causal_pipeline.html', invisibiltystep3='visible', flines=session['fln'],
+                                       argument=session['processedfile'], datafr=session['df_format'],
+                                       plot_wordcloud='visible', fullfile=session['fullinfo'],
+                                       graphJSON=session['graphJSON'],
+                                       fpath=session['filepath'])
 
 
-    return render_template('notdash.html', graphJSON=graphJSON, wordcloud=filename)
-def fecthtelegramdata(input):
-    try:
-        tweets = []
-        limit = 10
-        for tweet in telegram.TelegramChannelScraper(input).get_items():
-            if len(tweets) == limit:
-                break
-            else:
-                tweets.append(tweet.date, tweet.content, tweet.url)
+            elif request.form['submit_button'] == 'Graph':
+                return render_template('causal_pipeline.html', invisibiltystep2='visible',
+                                       filepath=session['uploaded_data_file_path'])
+            elif request.form['submit_button'] == 'Plot Wordcloud':
+                session['filepath'] = "static/" + session['filename']
+                session['graphJSON'] = session['graphJSON'] if session.get('graphJSON') else ""
+                session['filename'] = session['filename'] if session.get('filename') else ""
+                return render_template('causal_pipeline.html', invisibiltystep3='visible', flines=session['fln'],
+                                       plot_wordcloud='visible', argument=session['processedfile'],
+                                       datafr=session['df_format'], wordcloudimg=session['filename'],
+                                       graphJSON=session['graphJSON'], fpath=session['filepath'],
+                                       fullfile=session['fullinfo'])
 
-            message = "data scraped from telegram successfully"
-        return tweets, message, True
-    except:
-        return [], "telegram channel not found", False
+            elif request.form['submit_button'] == 'Word Frequency':
+                if ((session.get('freqdist') == "") or (session.get('words') == "")):
+                    freqdist, words, df_format = get_string(session['procfile'], session['lang'])
+                    session['freqdist'] = freqdist
+                    session['words'] = words
+                    session['df_format'] = df_format
+                session['graphJSON'] = session['graphJSON'] if session.get('graphJSON') else ""
+                session['filepath'] = session['filepath'] if session.get('filepath') else ""
+                session['filename'] = session['filename'] if session.get('filename') else ""
+                return render_template('causal_pipeline.html', invisibiltystep3='visible', flines=session['fln'],
+                                       argument=session['processedfile'], fullfile=session['fullinfo'],
+                                       plot_wordfrequency='visible', wordcloudimg=session['filename'],
+                                       graphJSON=session['graphJSON'], fpath=session['filepath'])
+            elif request.form['submit_button'] == 'Plot Word frequency':
 
+                # fig = px.histogram(session[df_format], x='continent', y='col_chosen', histfunc='avg')
+                fig = px.scatter(session['df_format'].query(" Frequency > 2"), x='Term', y='Frequency',
+                                 hover_data=['Term', 'Frequency'], size='Frequency', size_max=40,
+                                 color='Frequency')
 
-def fecthtwitterdata(input, noquery, querystring, lang):
-    tweets = []
-    limit = int(noquery)
-    try:
-        for tweet in sntwitter.TwitterSearchScraper(input).get_items():
-            if len(tweets) == limit:
-                break
-            else:
-                tweets.append([tweet.id, tweet.rawContent])
-        df = pd.DataFrame(tweets, columns=['twitter_id', 'Content'])
-        namefile = querystring.replace(' ', '_')
+                graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+                session['graphJSON'] = graphJSON
+                session['filepath'] = session['filepath'] if session.get('filepath') else ""
+                session['filename'] = session['filename'] if session.get('filename') else ""
 
-        fpath=os.path.join(app.config['UPLOAD_FOLDER'], lang + "_" + namefile + '.csv')
- 
-        df.to_csv(fpath, index=False)
-        message = "data scraped from twitter successfully"
-        return tweets, message, True
+                return render_template('causal_pipeline.html', graphJSON=graphJSON, invisibiltystep3='visible',
+                                       flines=session['fln'], fqdist=session['freqdist'],
+                                       datafr=session['df_format'], wordcloudimg=session['filename'],
+                                       fpath=session['filepath'], fullfile=session['fullinfo'],
+                                       plot_wordfrequency='visible')
 
-    except:
-        return [], "sorry,unable to scrape from twitter", False
+    else:
+        return render_template("causal_pipeline.html")
+
 
 if __name__ == "__main__":
     uvicorn.run(myfastapi, host='127.0.0.1', port=8000)
